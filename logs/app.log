@@ -1,0 +1,56 @@
+2026-08-18 14:56:14 | INFO     | 01_data_loading | Starting Data Loading notebook
+2026-08-18 14:56:26 | ERROR    | 01_data_loading | CSV file not found at d:\TRUPTIMAYEE KHUNTIA\PADDY YIELD PREDICTOR\paddy_project\paddydataset(2).csv. Please check the path.
+2026-08-18 14:56:30 | INFO     | 01_data_loading | Starting Data Loading notebook
+2026-08-18 14:56:30 | ERROR    | 01_data_loading | CSV file not found at d:\TRUPTIMAYEE KHUNTIA\PADDY YIELD PREDICTOR\paddy_project\paddydataset(2).csv. Please check the path.
+2026-08-18 15:02:21 | INFO     | 01_data_loading | Starting Data Loading notebook
+2026-08-18 15:02:29 | INFO     | 01_data_loading | Dataset loaded — shape: (2789, 45)
+2026-08-18 15:02:32 | INFO     | 01_data_loading | Starting Data Loading notebook
+2026-08-18 15:02:33 | INFO     | 01_data_loading | Dataset loaded — shape: (2789, 45)
+2026-08-18 15:02:33 | INFO     | 01_data_loading | Missing values: 0 | Duplicates: 451
+2026-08-18 15:08:33 | INFO     | 03_preprocessing | Starting Preprocessing notebook
+2026-08-18 15:08:36 | INFO     | 03_preprocessing | Starting Preprocessing notebook
+2026-08-18 15:08:37 | INFO     | src.data_loader | Dataset loaded — shape: (2789, 45)
+2026-08-18 15:08:37 | INFO     | src.data_loader | Cleaning done — removed 451 duplicate/empty rows. Final shape: (2338, 45)
+2026-08-18 15:08:37 | INFO     | src.data_loader | Features shape: (2338, 44) | Target shape: (2338,)
+2026-08-18 15:08:41 | INFO     | 03_preprocessing | Train/test split done — Train: (1870, 44), Test: (468, 44)
+2026-08-18 15:08:42 | INFO     | 03_preprocessing | Preprocessor built successfully
+2026-08-18 15:08:42 | INFO     | 03_preprocessing | Preprocessing applied successfully
+2026-08-18 15:09:16 | INFO     | 04_model_training | Starting Model Training notebook
+2026-08-18 15:09:19 | INFO     | src.data_loader | Dataset loaded — shape: (2789, 45)
+2026-08-18 15:09:19 | INFO     | src.data_loader | Cleaning done — removed 451 duplicate/empty rows. Final shape: (2338, 45)
+2026-08-18 15:09:19 | INFO     | src.data_loader | Features shape: (2338, 44) | Target shape: (2338,)
+2026-08-18 15:09:19 | INFO     | 04_model_training | Data ready for training
+2026-08-18 15:09:23 | INFO     | 04_model_training | Starting Model Training notebook
+2026-08-18 15:09:23 | INFO     | src.data_loader | Dataset loaded — shape: (2789, 45)
+2026-08-18 15:09:23 | INFO     | src.data_loader | Cleaning done — removed 451 duplicate/empty rows. Final shape: (2338, 45)
+2026-08-18 15:09:23 | INFO     | src.data_loader | Features shape: (2338, 44) | Target shape: (2338,)
+2026-08-18 15:09:23 | INFO     | 04_model_training | Data ready for training
+2026-08-18 15:09:23 | INFO     | src.model_utils | Numeric features: 36 | Categorical features: 8
+2026-08-18 15:09:23 | INFO     | src.model_utils | Evaluation — MAE: 768.37 | RMSE: 1019.89 | R²: 0.98785
+2026-08-18 15:09:24 | INFO     | src.model_utils | Evaluation — MAE: 693.21 | RMSE: 965.59 | R²: 0.98911
+2026-08-18 15:09:24 | INFO     | src.model_utils | Evaluation — MAE: 658.26 | RMSE: 908.93 | R²: 0.99035
+2026-08-18 15:09:25 | INFO     | src.model_utils | Evaluation — MAE: 702.68 | RMSE: 979.79 | R²: 0.98879
+2026-08-18 15:09:25 | INFO     | 04_model_training | Best model from comparison: Gradient Boosting
+2026-08-18 15:12:06 | INFO     | 06_hyperparameter_tuning | Starting Hyperparameter Tuning notebook
+2026-08-18 15:12:06 | INFO     | src.data_loader | Dataset loaded — shape: (2789, 45)
+2026-08-18 15:12:06 | INFO     | src.data_loader | Cleaning done — removed 451 duplicate/empty rows. Final shape: (2338, 45)
+2026-08-18 15:12:06 | INFO     | src.data_loader | Features shape: (2338, 44) | Target shape: (2338,)
+2026-08-18 15:12:06 | INFO     | 06_hyperparameter_tuning | Data ready for tuning
+2026-08-18 15:12:10 | INFO     | 06_hyperparameter_tuning | Starting Hyperparameter Tuning notebook
+2026-08-18 15:12:10 | INFO     | src.data_loader | Dataset loaded — shape: (2789, 45)
+2026-08-18 15:12:10 | INFO     | src.data_loader | Cleaning done — removed 451 duplicate/empty rows. Final shape: (2338, 45)
+2026-08-18 15:12:10 | INFO     | src.data_loader | Features shape: (2338, 44) | Target shape: (2338,)
+2026-08-18 15:12:10 | INFO     | 06_hyperparameter_tuning | Data ready for tuning
+2026-08-18 15:12:10 | INFO     | src.model_utils | Numeric features: 36 | Categorical features: 8
+2026-08-18 15:12:29 | INFO     | 06_hyperparameter_tuning | Best params: {'model__n_estimators': 500, 'model__min_samples_split': 10, 'model__min_samples_leaf': 2, 'model__max_features': 'sqrt', 'model__max_depth': 20}
+2026-08-18 15:12:29 | INFO     | 06_hyperparameter_tuning | Best CV RMSE: 866.05
+2026-08-18 15:12:29 | INFO     | src.model_utils | Evaluation — MAE: 673.84 | RMSE: 934.16 | R²: 0.98981
+2026-08-18 15:12:30 | INFO     | src.model_utils | Model saved to: d:\TRUPTIMAYEE KHUNTIA\PADDY YIELD PREDICTOR\paddy_project\models\paddy_yield_predictor.pkl
+2026-08-18 15:20:39 | INFO     | 08_model_testing | Starting Model Testing notebook
+2026-08-18 15:20:42 | INFO     | 08_model_testing | Starting Model Testing notebook
+2026-08-18 15:20:42 | INFO     | src.model_utils | Model loaded from: d:\TRUPTIMAYEE KHUNTIA\PADDY YIELD PREDICTOR\paddy_project\models\paddy_yield_predictor.pkl
+2026-08-18 15:20:42 | ERROR    | 08_model_testing | Failed to load dataset: [Errno 2] No such file or directory: 'd:\\TRUPTIMAYEE KHUNTIA\\PADDY YIELD PREDICTOR\\paddy_project\\paddydataset(2).csv'
+2026-08-18 15:21:49 | INFO     | 08_model_testing | Starting Model Testing notebook
+2026-08-18 15:21:49 | INFO     | src.model_utils | Model loaded from: d:\TRUPTIMAYEE KHUNTIA\PADDY YIELD PREDICTOR\paddy_project\models\paddy_yield_predictor.pkl
+2026-08-18 15:21:49 | INFO     | 08_model_testing | Sample prediction — Actual: 35028.00 | Predicted: 35609.08
+2026-08-18 15:21:50 | INFO     | 08_model_testing | Spot-check on 5 samples completed
