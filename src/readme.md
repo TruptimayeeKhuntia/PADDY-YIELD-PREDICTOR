@@ -2,6 +2,7 @@
 
 ## live demo:
 *streamlit app : https://paddy-yield-predictor-by-trupti.streamlit.app/ 
+
 ## Project Overview
 
 The **Paddy Yield Predictor** is a Machine Learning-based project that predicts the expected **paddy yield in kilograms** based on agricultural, soil, fertilizer, rainfall, temperature, wind, humidity, and other crop-related factors.
