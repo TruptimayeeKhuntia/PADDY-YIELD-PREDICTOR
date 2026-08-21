@@ -13,12 +13,18 @@ Steps:
 7. Compare regression models
 8. Tune Random Forest Regressor
 9. Evaluate final model
-10. Save final model as .pkl
-11. Save metrics as CSV
+10. Calculate Feature Importance
+11. Save final model as .joblib
+12. Save metrics as CSV
 
 Run:
     python training.py
 """
+
+
+# ============================================================
+# IMPORTS
+# ============================================================
 
 import sys
 import joblib
@@ -26,46 +32,80 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 from sklearn.compose import ColumnTransformer
+
 from sklearn.ensemble import (
     ExtraTreesRegressor,
     GradientBoostingRegressor,
     RandomForestRegressor
 )
+
 from sklearn.impute import SimpleImputer
+
 from sklearn.linear_model import LinearRegression
+
 from sklearn.metrics import (
     mean_absolute_error,
     mean_squared_error,
     r2_score
 )
+
 from sklearn.model_selection import (
     RandomizedSearchCV,
     train_test_split
 )
+
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
+
+from sklearn.preprocessing import (
+    OneHotEncoder,
+    StandardScaler
+)
 
 
 # ============================================================
 # 1. PROJECT PATHS
 # ============================================================
 
-PROJECT_ROOT = Path(__file__).resolve().parent
+# training.py is inside src/
+# Therefore, project root is one level above src/
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 DATA_PATH = PROJECT_ROOT / "paddydataset.csv"
 
 MODEL_DIR = PROJECT_ROOT / "models"
+
 REPORT_DIR = PROJECT_ROOT / "report"
 
-MODEL_PATH = MODEL_DIR / "paddy_yield_predictor.joblib"
-METRICS_PATH = REPORT_DIR / "model_metrics.csv"
+MODEL_PATH = (
+    MODEL_DIR /
+    "paddy_yield_predictor.joblib"
+)
+
+METRICS_PATH = (
+    REPORT_DIR /
+    "model_metrics.csv"
+)
+
+FEATURE_IMPORTANCE_PATH = (
+    REPORT_DIR /
+    "feature_importance.csv"
+)
 
 
 # Create required folders
-MODEL_DIR.mkdir(parents=True, exist_ok=True)
-REPORT_DIR.mkdir(parents=True, exist_ok=True)
+MODEL_DIR.mkdir(
+    parents=True,
+    exist_ok=True
+)
+
+REPORT_DIR.mkdir(
+    parents=True,
+    exist_ok=True
+)
 
 
 # ============================================================
@@ -73,7 +113,9 @@ REPORT_DIR.mkdir(parents=True, exist_ok=True)
 # ============================================================
 
 TARGET = "Paddy yield(in Kg)"
+
 RANDOM_STATE = 42
+
 TEST_SIZE = 0.20
 
 
@@ -83,12 +125,18 @@ TEST_SIZE = 0.20
 
 def log(message):
     """Simple console logger."""
-    print(f"[INFO] {message}")
+
+    print(
+        f"[INFO] {message}"
+    )
 
 
 def log_error(message):
     """Simple error logger."""
-    print(f"[ERROR] {message}")
+
+    print(
+        f"[ERROR] {message}"
+    )
 
 
 # ============================================================
@@ -98,17 +146,28 @@ def log_error(message):
 def load_dataset():
     """Load Paddy dataset from CSV."""
 
-    log("Starting data loading...")
-    log(f"Dataset path: {DATA_PATH}")
+    log(
+        "Starting data loading..."
+    )
+
+    log(
+        f"Dataset path: {DATA_PATH}"
+    )
 
     if not DATA_PATH.exists():
+
         raise FileNotFoundError(
-            f"Dataset not found at:\n{DATA_PATH}\n\n"
-            "Make sure paddydataset.csv is in the project root."
+            f"Dataset not found at:\n"
+            f"{DATA_PATH}\n\n"
+            "Make sure paddydataset.csv "
+            "is in the project root."
         )
 
     try:
-        df = pd.read_csv(DATA_PATH)
+
+        df = pd.read_csv(
+            DATA_PATH
+        )
 
         # Clean column names
         df.columns = (
@@ -117,13 +176,22 @@ def load_dataset():
             .str.strip()
         )
 
-        log(f"Dataset loaded successfully.")
-        log(f"Dataset shape: {df.shape}")
+        log(
+            "Dataset loaded successfully."
+        )
+
+        log(
+            f"Dataset shape: {df.shape}"
+        )
 
         return df
 
     except Exception as e:
-        log_error(f"Failed to load dataset: {e}")
+
+        log_error(
+            f"Failed to load dataset: {e}"
+        )
+
         raise
 
 
@@ -134,7 +202,9 @@ def load_dataset():
 def clean_dataset(df):
     """Clean basic dataset issues."""
 
-    log("Starting data cleaning...")
+    log(
+        "Starting data cleaning..."
+    )
 
     # Remove completely empty rows
     df = df.dropna(
@@ -149,16 +219,27 @@ def clean_dataset(df):
     )
 
     # Remove duplicate rows
-    duplicate_count = df.duplicated().sum()
+    duplicate_count = (
+        df.duplicated().sum()
+    )
 
-    log(f"Duplicate rows found: {duplicate_count}")
+    log(
+        f"Duplicate rows found: "
+        f"{duplicate_count}"
+    )
 
     if duplicate_count > 0:
+
         df = df.drop_duplicates()
 
-    df = df.reset_index(drop=True)
+    df = df.reset_index(
+        drop=True
+    )
 
-    log(f"Shape after cleaning: {df.shape}")
+    log(
+        f"Shape after cleaning: "
+        f"{df.shape}"
+    )
 
     return df
 
@@ -168,30 +249,72 @@ def clean_dataset(df):
 # ============================================================
 
 def data_summary(df):
-    """Display basic information about the dataset."""
+    """Display basic information about dataset."""
 
-    log("Performing data understanding...")
+    log(
+        "Performing data understanding..."
+    )
 
-    print("\n" + "=" * 60)
-    print("PADDY YIELD PREDICTOR")
-    print("=" * 60)
+    print(
+        "\n" + "=" * 60
+    )
 
-    print(f"\nDataset Shape: {df.shape}")
+    print(
+        "PADDY YIELD PREDICTOR"
+    )
 
-    print("\nColumn Names:")
-    print(df.columns.tolist())
+    print(
+        "=" * 60
+    )
 
-    print("\nMissing Values:")
-    print(df.isnull().sum().sort_values(ascending=False).head(20))
+    print(
+        f"\nDataset Shape: {df.shape}"
+    )
 
-    print("\nDuplicate Rows:")
-    print(df.duplicated().sum())
+    print(
+        "\nColumn Names:"
+    )
 
-    print("\nData Types:")
-    print(df.dtypes)
+    print(
+        df.columns.tolist()
+    )
 
-    print("\nStatistical Summary:")
-    print(df.describe().T)
+    print(
+        "\nMissing Values:"
+    )
+
+    print(
+        df.isnull()
+        .sum()
+        .sort_values(
+            ascending=False
+        )
+        .head(20)
+    )
+
+    print(
+        "\nDuplicate Rows:"
+    )
+
+    print(
+        df.duplicated().sum()
+    )
+
+    print(
+        "\nData Types:"
+    )
+
+    print(
+        df.dtypes
+    )
+
+    print(
+        "\nStatistical Summary:"
+    )
+
+    print(
+        df.describe().T
+    )
 
 
 # ============================================================
@@ -201,15 +324,25 @@ def data_summary(df):
 def split_features_target(df):
     """Separate X and y."""
 
-    log("Separating features and target...")
+    log(
+        "Separating features and target..."
+    )
 
     if TARGET not in df.columns:
+
         raise KeyError(
-            f"Target column '{TARGET}' was not found.\n"
-            f"Available columns are:\n{df.columns.tolist()}"
+            f"Target column "
+            f"'{TARGET}' was not found.\n"
+            f"Available columns are:\n"
+            f"{df.columns.tolist()}"
         )
 
-    X = df.drop(columns=[TARGET])
+    # Features
+    X = df.drop(
+        columns=[TARGET]
+    )
+
+    # Target
     y = df[TARGET]
 
     # Make sure target is numeric
@@ -221,15 +354,38 @@ def split_features_target(df):
     # Remove rows where target is missing
     valid_target = y.notna()
 
-    X = X.loc[valid_target].reset_index(drop=True)
-    y = y.loc[valid_target].reset_index(drop=True)
+    X = (
+        X.loc[valid_target]
+        .reset_index(drop=True)
+    )
 
-    log(f"Features shape: {X.shape}")
-    log(f"Target shape: {y.shape}")
+    y = (
+        y.loc[valid_target]
+        .reset_index(drop=True)
+    )
 
-    print("\nTarget:", TARGET)
-    print("Number of features:", X.shape[1])
-    print("Number of samples:", X.shape[0])
+    log(
+        f"Features shape: {X.shape}"
+    )
+
+    log(
+        f"Target shape: {y.shape}"
+    )
+
+    print(
+        "\nTarget:",
+        TARGET
+    )
+
+    print(
+        "Number of features:",
+        X.shape[1]
+    )
+
+    print(
+        "Number of samples:",
+        X.shape[0]
+    )
 
     return X, y
 
@@ -241,24 +397,54 @@ def split_features_target(df):
 def split_data(X, y):
     """Split dataset into training and testing sets."""
 
-    log("Splitting data into train and test sets...")
-
-    X_train, X_test, y_train, y_test = train_test_split(
-        X,
-        y,
-        test_size=TEST_SIZE,
-        random_state=RANDOM_STATE
+    log(
+        "Splitting data into "
+        "train and test sets..."
     )
 
-    print("\nTraining set:")
-    print("X_train:", X_train.shape)
-    print("y_train:", y_train.shape)
+    X_train, X_test, y_train, y_test = (
+        train_test_split(
+            X,
+            y,
+            test_size=TEST_SIZE,
+            random_state=RANDOM_STATE
+        )
+    )
 
-    print("\nTesting set:")
-    print("X_test:", X_test.shape)
-    print("y_test:", y_test.shape)
+    print(
+        "\nTraining set:"
+    )
 
-    return X_train, X_test, y_train, y_test
+    print(
+        "X_train:",
+        X_train.shape
+    )
+
+    print(
+        "y_train:",
+        y_train.shape
+    )
+
+    print(
+        "\nTesting set:"
+    )
+
+    print(
+        "X_test:",
+        X_test.shape
+    )
+
+    print(
+        "y_test:",
+        y_test.shape
+    )
+
+    return (
+        X_train,
+        X_test,
+        y_train,
+        y_test
+    )
 
 
 # ============================================================
@@ -266,42 +452,78 @@ def split_data(X, y):
 # ============================================================
 
 def build_preprocessor(X):
-    """Create preprocessing pipeline for numerical and categorical features."""
+    """Create preprocessing pipeline."""
 
-    log("Building preprocessing pipeline...")
+    log(
+        "Building preprocessing pipeline..."
+    )
 
-    numeric_features = X.select_dtypes(
-        include=["number"]
-    ).columns.tolist()
+    # Numerical columns
+    numeric_features = (
+        X.select_dtypes(
+            include=["number"]
+        )
+        .columns
+        .tolist()
+    )
 
-    categorical_features = X.select_dtypes(
-        exclude=["number"]
-    ).columns.tolist()
+    # Categorical columns
+    categorical_features = (
+        X.select_dtypes(
+            exclude=["number"]
+        )
+        .columns
+        .tolist()
+    )
 
-    print("\nNumerical features:", len(numeric_features))
-    print("Categorical features:", len(categorical_features))
+    print(
+        "\nNumerical features:",
+        len(numeric_features)
+    )
 
-    print("\nCategorical columns:")
-    print(categorical_features)
+    print(
+        "Categorical features:",
+        len(categorical_features)
+    )
 
+    print(
+        "\nCategorical columns:"
+    )
+
+    print(
+        categorical_features
+    )
+
+    # --------------------------------------------------------
     # Numerical pipeline
+    # --------------------------------------------------------
+
     numeric_pipeline = Pipeline([
         (
             "imputer",
-            SimpleImputer(strategy="median")
+            SimpleImputer(
+                strategy="median"
+            )
         ),
+
         (
             "scaler",
             StandardScaler()
         )
     ])
 
+    # --------------------------------------------------------
     # Categorical pipeline
+    # --------------------------------------------------------
+
     categorical_pipeline = Pipeline([
         (
             "imputer",
-            SimpleImputer(strategy="most_frequent")
+            SimpleImputer(
+                strategy="most_frequent"
+            )
         ),
+
         (
             "onehot",
             OneHotEncoder(
@@ -310,12 +532,17 @@ def build_preprocessor(X):
         )
     ])
 
+    # --------------------------------------------------------
+    # Column Transformer
+    # --------------------------------------------------------
+
     preprocessor = ColumnTransformer([
         (
             "num",
             numeric_pipeline,
             numeric_features
         ),
+
         (
             "cat",
             categorical_pipeline,
@@ -330,23 +557,35 @@ def build_preprocessor(X):
 # 10. MODEL EVALUATION
 # ============================================================
 
-def evaluate_model(model, X_test, y_test):
+def evaluate_model(
+    model,
+    X_test,
+    y_test
+):
     """Calculate regression metrics."""
 
-    predictions = model.predict(X_test)
+    predictions = model.predict(
+        X_test
+    )
 
+    # MAE
     mae = mean_absolute_error(
         y_test,
         predictions
     )
 
+    # MSE
     mse = mean_squared_error(
         y_test,
         predictions
     )
 
-    rmse = np.sqrt(mse)
+    # RMSE
+    rmse = np.sqrt(
+        mse
+    )
 
+    # R2
     r2 = r2_score(
         y_test,
         predictions
@@ -373,26 +612,33 @@ def compare_models(
 ):
     """Compare multiple regression models."""
 
-    log("Starting model comparison...")
+    log(
+        "Starting model comparison..."
+    )
 
     models = {
-        "Linear Regression": LinearRegression(),
 
-        "Random Forest": RandomForestRegressor(
-            n_estimators=300,
-            random_state=RANDOM_STATE,
-            n_jobs=-1
-        ),
+        "Linear Regression":
+            LinearRegression(),
 
-        "Gradient Boosting": GradientBoostingRegressor(
-            random_state=RANDOM_STATE
-        ),
+        "Random Forest":
+            RandomForestRegressor(
+                n_estimators=300,
+                random_state=RANDOM_STATE,
+                n_jobs=-1
+            ),
 
-        "Extra Trees": ExtraTreesRegressor(
-            n_estimators=300,
-            random_state=RANDOM_STATE,
-            n_jobs=-1
-        )
+        "Gradient Boosting":
+            GradientBoostingRegressor(
+                random_state=RANDOM_STATE
+            ),
+
+        "Extra Trees":
+            ExtraTreesRegressor(
+                n_estimators=300,
+                random_state=RANDOM_STATE,
+                n_jobs=-1
+            )
     }
 
     results = []
@@ -400,16 +646,23 @@ def compare_models(
     for name, estimator in models.items():
 
         try:
-            log(f"Training {name}...")
 
-            # New preprocessor for every model
-            preprocessor = build_preprocessor(X)
+            log(
+                f"Training {name}..."
+            )
+
+            # New preprocessor
+            # for every model
+            preprocessor = (
+                build_preprocessor(X)
+            )
 
             pipeline = Pipeline([
                 (
                     "preprocessor",
                     preprocessor
                 ),
+
                 (
                     "model",
                     estimator
@@ -429,17 +682,28 @@ def compare_models(
 
             results.append({
                 "Model": name,
-                "MAE": metrics["MAE"],
-                "MSE": metrics["MSE"],
-                "RMSE": metrics["RMSE"],
-                "R2 Score": metrics["R2 Score"]
+
+                "MAE":
+                    metrics["MAE"],
+
+                "MSE":
+                    metrics["MSE"],
+
+                "RMSE":
+                    metrics["RMSE"],
+
+                "R2 Score":
+                    metrics["R2 Score"]
             })
 
             print(
                 f"{name} -> "
-                f"R2: {metrics['R2 Score']:.4f} | "
-                f"MAE: {metrics['MAE']:.2f} | "
-                f"RMSE: {metrics['RMSE']:.2f}"
+                f"R2: "
+                f"{metrics['R2 Score']:.4f} | "
+                f"MAE: "
+                f"{metrics['MAE']:.2f} | "
+                f"RMSE: "
+                f"{metrics['RMSE']:.2f}"
             )
 
         except Exception as e:
@@ -449,20 +713,30 @@ def compare_models(
             )
 
     if not results:
+
         raise RuntimeError(
             "No model could be trained successfully."
         )
 
-    comparison = pd.DataFrame(
-        results
-    ).sort_values(
-        "R2 Score",
-        ascending=False
+    comparison = (
+        pd.DataFrame(results)
+        .sort_values(
+            "R2 Score",
+            ascending=False
+        )
     )
 
-    print("\n" + "=" * 60)
-    print("MODEL COMPARISON")
-    print("=" * 60)
+    print(
+        "\n" + "=" * 60
+    )
+
+    print(
+        "MODEL COMPARISON"
+    )
+
+    print(
+        "=" * 60
+    )
 
     print(
         comparison.to_string(
@@ -480,19 +754,27 @@ def compare_models(
 def tune_random_forest(
     X_train,
     y_train,
-    X,
+    X
 ):
     """Tune Random Forest using RandomizedSearchCV."""
 
-    log("Starting Random Forest hyperparameter tuning...")
+    log(
+        "Starting Random Forest "
+        "hyperparameter tuning..."
+    )
 
-    preprocessor = build_preprocessor(X)
+    # Build preprocessor
+    preprocessor = (
+        build_preprocessor(X)
+    )
 
+    # Random Forest pipeline
     pipeline = Pipeline([
         (
             "preprocessor",
             preprocessor
         ),
+
         (
             "model",
             RandomForestRegressor(
@@ -502,7 +784,12 @@ def tune_random_forest(
         )
     ])
 
+    # --------------------------------------------------------
+    # Hyperparameter grid
+    # --------------------------------------------------------
+
     param_grid = {
+
         "model__n_estimators": [
             200,
             300,
@@ -535,27 +822,50 @@ def tune_random_forest(
         ]
     }
 
+    # --------------------------------------------------------
+    # Randomized Search
+    # --------------------------------------------------------
+
     search = RandomizedSearchCV(
+
         estimator=pipeline,
+
         param_distributions=param_grid,
+
         n_iter=15,
+
         cv=3,
+
         scoring="neg_root_mean_squared_error",
+
         random_state=RANDOM_STATE,
+
         n_jobs=-1,
+
         verbose=1
     )
 
+    # Train search
     search.fit(
         X_train,
         y_train
     )
 
-    print("\n" + "=" * 60)
-    print("BEST RANDOM FOREST PARAMETERS")
-    print("=" * 60)
+    print(
+        "\n" + "=" * 60
+    )
 
-    print(search.best_params_)
+    print(
+        "BEST RANDOM FOREST PARAMETERS"
+    )
+
+    print(
+        "=" * 60
+    )
+
+    print(
+        search.best_params_
+    )
 
     print(
         "\nBest CV RMSE:",
@@ -569,13 +879,226 @@ def tune_random_forest(
 
 
 # ============================================================
-# 13. SAVE MODEL USING joblib
+# 13. FEATURE IMPORTANCE
+# ============================================================
+
+def get_feature_importance(
+    model,
+    top_n=15
+):
+    """Calculate and display feature importance."""
+
+    log(
+        "Calculating feature importance..."
+    )
+
+    # --------------------------------------------------------
+    # Get fitted preprocessor
+    # --------------------------------------------------------
+
+    preprocessor = (
+        model.named_steps[
+            "preprocessor"
+        ]
+    )
+
+    # --------------------------------------------------------
+    # Get trained Random Forest
+    # --------------------------------------------------------
+
+    rf_model = (
+        model.named_steps[
+            "model"
+        ]
+    )
+
+    # --------------------------------------------------------
+    # Check feature importance
+    # --------------------------------------------------------
+
+    if not hasattr(
+        rf_model,
+        "feature_importances_"
+    ):
+
+        raise AttributeError(
+            "The selected model does not "
+            "support feature_importances_."
+        )
+
+    # --------------------------------------------------------
+    # Get importance values
+    # --------------------------------------------------------
+
+    importances = (
+        rf_model.feature_importances_
+    )
+
+    # --------------------------------------------------------
+    # Get feature names after preprocessing
+    # --------------------------------------------------------
+
+    feature_names = (
+        preprocessor
+        .get_feature_names_out()
+    )
+
+    # Safety check
+    if len(feature_names) != len(importances):
+
+        raise ValueError(
+            "Feature names and importance "
+            "values have different lengths."
+        )
+
+    # --------------------------------------------------------
+    # Create DataFrame
+    # --------------------------------------------------------
+
+    importance_df = pd.DataFrame({
+
+        "Feature":
+            feature_names,
+
+        "Importance":
+            importances
+    })
+
+    # --------------------------------------------------------
+    # Sort highest to lowest
+    # --------------------------------------------------------
+
+    importance_df = (
+        importance_df
+        .sort_values(
+            by="Importance",
+            ascending=False
+        )
+        .reset_index(drop=True)
+    )
+
+    # --------------------------------------------------------
+    # Display Top Features
+    # --------------------------------------------------------
+
+    print(
+        "\n" + "=" * 60
+    )
+
+    print(
+        "FEATURE IMPORTANCE - RANDOM FOREST"
+    )
+
+    print(
+        "=" * 60
+    )
+
+    print(
+        importance_df
+        .head(top_n)
+        .to_string(
+            index=False
+        )
+    )
+
+    # --------------------------------------------------------
+    # Save complete feature importance
+    # --------------------------------------------------------
+
+    importance_df.to_csv(
+        FEATURE_IMPORTANCE_PATH,
+        index=False
+    )
+
+    print(
+        "\nFeature importance CSV saved:"
+    )
+
+    print(
+        FEATURE_IMPORTANCE_PATH
+    )
+
+    # --------------------------------------------------------
+    # Prepare Top Features for Plot
+    # --------------------------------------------------------
+
+    top_features = (
+        importance_df
+        .head(top_n)
+        .sort_values(
+            by="Importance",
+            ascending=True
+        )
+    )
+
+    # --------------------------------------------------------
+    # Plot Feature Importance
+    # --------------------------------------------------------
+
+    plt.figure(
+        figsize=(10, 7)
+    )
+
+    plt.barh(
+        top_features["Feature"],
+        top_features["Importance"]
+    )
+
+    plt.xlabel(
+        "Feature Importance"
+    )
+
+    plt.ylabel(
+        "Features"
+    )
+
+    plt.title(
+        "Top 15 Features - "
+        "Paddy Yield Prediction"
+    )
+
+    plt.tight_layout()
+
+    # --------------------------------------------------------
+    # Save Plot
+    # --------------------------------------------------------
+
+    feature_plot_path = (
+        REPORT_DIR /
+        "feature_importance.png"
+    )
+
+    plt.savefig(
+        feature_plot_path,
+        dpi=300,
+        bbox_inches="tight"
+    )
+
+    plt.show()
+
+    plt.close()
+
+    print(
+        "\nFeature importance graph saved:"
+    )
+
+    print(
+        feature_plot_path
+    )
+
+    return importance_df
+
+
+# ============================================================
+# 14. SAVE MODEL USING joblib
 # ============================================================
 
 def save_model(model):
     """Save trained model pipeline as .joblib."""
 
-    log("Saving final model...")
+    log(
+        "Saving final model..."
+    )
 
     joblib.dump(
         model,
@@ -583,12 +1106,13 @@ def save_model(model):
     )
 
     print(
-        f"\nModel saved successfully:\n{MODEL_PATH}"
+        f"\nModel saved successfully:\n"
+        f"{MODEL_PATH}"
     )
 
 
 # ============================================================
-# 14. SAVE METRICS
+# 15. SAVE METRICS
 # ============================================================
 
 def save_metrics(metrics):
@@ -604,14 +1128,15 @@ def save_metrics(metrics):
     )
 
     print(
-        f"Metrics saved successfully:\n{METRICS_PATH}"
+        f"Metrics saved successfully:\n"
+        f"{METRICS_PATH}"
     )
 
     return metrics_df
 
 
 # ============================================================
-# 15. SAMPLE PREDICTION
+# 16. SAMPLE PREDICTION
 # ============================================================
 
 def test_prediction(
@@ -621,29 +1146,53 @@ def test_prediction(
 ):
     """Test final model on first five records."""
 
-    log("Running sample predictions...")
+    log(
+        "Running sample predictions..."
+    )
 
     sample = X.iloc[:5]
 
-    actual = y.iloc[:5].values
+    actual = (
+        y.iloc[:5]
+        .values
+    )
 
-    predicted = model.predict(
-        sample
+    predicted = (
+        model.predict(
+            sample
+        )
     )
 
     prediction_df = pd.DataFrame({
-        "Actual (Kg)": actual,
-        "Predicted (Kg)": predicted,
-        "Difference (Kg)": np.abs(
-            actual - predicted
-        )
+
+        "Actual (Kg)":
+            actual,
+
+        "Predicted (Kg)":
+            predicted,
+
+        "Difference (Kg)":
+            np.abs(
+                actual -
+                predicted
+            )
     })
 
-    prediction_df = prediction_df.round(2)
+    prediction_df = (
+        prediction_df.round(2)
+    )
 
-    print("\n" + "=" * 60)
-    print("SAMPLE PREDICTIONS")
-    print("=" * 60)
+    print(
+        "\n" + "=" * 60
+    )
+
+    print(
+        "SAMPLE PREDICTIONS"
+    )
+
+    print(
+        "=" * 60
+    )
 
     print(
         prediction_df.to_string(
@@ -653,41 +1202,65 @@ def test_prediction(
 
 
 # ============================================================
-# 16. MAIN TRAINING FUNCTION
+# 17. MAIN TRAINING FUNCTION
 # ============================================================
 
 def main():
 
-    print("\n")
-    print("=" * 70)
-    print("          PADDY YIELD PREDICTOR - MODEL TRAINING")
-    print("=" * 70)
+    print(
+        "\n"
+    )
+
+    print(
+        "=" * 70
+    )
+
+    print(
+        "          PADDY YIELD PREDICTOR - MODEL TRAINING"
+    )
+
+    print(
+        "=" * 70
+    )
 
     try:
 
         # ----------------------------------------------------
         # Load dataset
         # ----------------------------------------------------
+
         df = load_dataset()
 
         # ----------------------------------------------------
         # Clean dataset
         # ----------------------------------------------------
-        df = clean_dataset(df)
+
+        df = clean_dataset(
+            df
+        )
 
         # ----------------------------------------------------
         # Data summary
         # ----------------------------------------------------
-        data_summary(df)
+
+        data_summary(
+            df
+        )
 
         # ----------------------------------------------------
         # X and y
         # ----------------------------------------------------
-        X, y = split_features_target(df)
+
+        X, y = (
+            split_features_target(
+                df
+            )
+        )
 
         # ----------------------------------------------------
         # Train-test split
         # ----------------------------------------------------
+
         (
             X_train,
             X_test,
@@ -701,24 +1274,33 @@ def main():
         # ----------------------------------------------------
         # Compare models
         # ----------------------------------------------------
-        comparison = compare_models(
-            X_train,
-            X_test,
-            y_train,
-            y_test,
-            X
+
+        comparison = (
+            compare_models(
+                X_train,
+                X_test,
+                y_train,
+                y_test,
+                X
+            )
         )
 
+        # ----------------------------------------------------
         # Save comparison results
+        # ----------------------------------------------------
+
         comparison.to_csv(
             METRICS_PATH,
             index=False
         )
 
         # ----------------------------------------------------
-        # Show best model from comparison
+        # Show best model
         # ----------------------------------------------------
-        best_model_name = comparison.iloc[0]["Model"]
+
+        best_model_name = (
+            comparison.iloc[0]["Model"]
+        )
 
         print(
             f"\nBest model before tuning: "
@@ -728,24 +1310,38 @@ def main():
         # ----------------------------------------------------
         # Tune Random Forest
         # ----------------------------------------------------
-        best_model = tune_random_forest(
-            X_train,
-            y_train,
-            X
+
+        best_model = (
+            tune_random_forest(
+                X_train,
+                y_train,
+                X
+            )
         )
 
         # ----------------------------------------------------
         # Evaluate tuned Random Forest
         # ----------------------------------------------------
-        final_metrics = evaluate_model(
-            best_model,
-            X_test,
-            y_test
+
+        final_metrics = (
+            evaluate_model(
+                best_model,
+                X_test,
+                y_test
+            )
         )
 
-        print("\n" + "=" * 60)
-        print("FINAL RANDOM FOREST RESULTS")
-        print("=" * 60)
+        print(
+            "\n" + "=" * 60
+        )
+
+        print(
+            "FINAL RANDOM FOREST RESULTS"
+        )
+
+        print(
+            "=" * 60
+        )
 
         print(
             f"MAE      : "
@@ -768,18 +1364,36 @@ def main():
         )
 
         # ----------------------------------------------------
+        # FEATURE IMPORTANCE
+        # ----------------------------------------------------
+
+        feature_importance = (
+            get_feature_importance(
+                best_model,
+                top_n=15
+            )
+        )
+
+        # ----------------------------------------------------
         # Save final metrics
         # ----------------------------------------------------
-        save_metrics(final_metrics)
+
+        save_metrics(
+            final_metrics
+        )
 
         # ----------------------------------------------------
         # Save model
         # ----------------------------------------------------
-        save_model(best_model)
+
+        save_model(
+            best_model
+        )
 
         # ----------------------------------------------------
         # Test prediction
         # ----------------------------------------------------
+
         test_prediction(
             best_model,
             X,
@@ -789,16 +1403,32 @@ def main():
         # ----------------------------------------------------
         # Final message
         # ----------------------------------------------------
-        print("\n" + "=" * 70)
-        print("TRAINING COMPLETED SUCCESSFULLY")
-        print("=" * 70)
 
         print(
-            f"\nModel file : {MODEL_PATH}"
+            "\n" + "=" * 70
         )
 
         print(
-            f"Metrics    : {METRICS_PATH}"
+            "TRAINING COMPLETED SUCCESSFULLY"
+        )
+
+        print(
+            "=" * 70
+        )
+
+        print(
+            f"\nModel file : "
+            f"{MODEL_PATH}"
+        )
+
+        print(
+            f"Metrics    : "
+            f"{METRICS_PATH}"
+        )
+
+        print(
+            f"Feature importance : "
+            f"{FEATURE_IMPORTANCE_PATH}"
         )
 
     except Exception as e:
@@ -811,8 +1441,9 @@ def main():
 
 
 # ============================================================
-# 17. RUN SCRIPT
+# 18. RUN SCRIPT
 # ============================================================
 
 if __name__ == "__main__":
+
     main()

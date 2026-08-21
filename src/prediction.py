@@ -1,4 +1,3 @@
-
 """
 prediction.py
 -------------
@@ -13,8 +12,13 @@ Steps:
 6. Display prediction results
 
 Run:
-    python prediction.py
+    python src/prediction.py
 """
+
+
+# ============================================================
+# IMPORTS
+# ============================================================
 
 from pathlib import Path
 
@@ -27,14 +31,24 @@ import numpy as np
 # 1. PROJECT PATHS
 # ============================================================
 
-PROJECT_ROOT = Path(__file__).resolve().parent
+# prediction.py is inside src/
+# Therefore, project root is one level above src/
 
-DATA_PATH = PROJECT_ROOT / "paddydataset.csv"
+PROJECT_ROOT = (
+    Path(__file__).resolve().parent.parent
+)
 
+# Dataset is in project root
+DATA_PATH = (
+    PROJECT_ROOT /
+    "paddydataset.csv"
+)
+
+# Trained model is inside models folder
 MODEL_PATH = (
-    PROJECT_ROOT
-    / "models"
-    / "paddy_yield_predictor.joblib"
+    PROJECT_ROOT /
+    "models" /
+    "paddy_yield_predictor.joblib"
 )
 
 
@@ -52,24 +66,40 @@ TARGET = "Paddy yield(in Kg)"
 def load_model():
     """Load the trained Paddy Yield Predictor model."""
 
-    print("[INFO] Loading trained model...")
-    print(f"[INFO] Model path: {MODEL_PATH}")
+    print(
+        "[INFO] Loading trained model..."
+    )
+
+    print(
+        f"[INFO] Model path: {MODEL_PATH}"
+    )
 
     if not MODEL_PATH.exists():
+
         raise FileNotFoundError(
-            f"Model not found at:\n{MODEL_PATH}\n\n"
+            f"Model not found at:\n"
+            f"{MODEL_PATH}\n\n"
             "Run training.py first."
         )
 
     try:
-        model = joblib.load(MODEL_PATH)
 
-        print("[INFO] Model loaded successfully.")
+        model = joblib.load(
+            MODEL_PATH
+        )
+
+        print(
+            "[INFO] Model loaded successfully."
+        )
 
         return model
 
     except Exception as e:
-        print(f"[ERROR] Failed to load model: {e}")
+
+        print(
+            f"[ERROR] Failed to load model: {e}"
+        )
+
         raise
 
 
@@ -80,39 +110,58 @@ def load_model():
 def load_dataset():
     """Load dataset for testing predictions."""
 
-    print("\n[INFO] Loading dataset...")
-    print(f"[INFO] Dataset path: {DATA_PATH}")
+    print(
+        "\n[INFO] Loading dataset..."
+    )
+
+    print(
+        f"[INFO] Dataset path: {DATA_PATH}"
+    )
 
     if not DATA_PATH.exists():
+
         raise FileNotFoundError(
-            f"Dataset not found at:\n{DATA_PATH}"
+            f"Dataset not found at:\n"
+            f"{DATA_PATH}"
         )
 
-    df = pd.read_csv(DATA_PATH)
+    try:
 
-    # Clean column names
-    df.columns = (
-        df.columns
-        .astype(str)
-        .str.strip()
-    )
+        df = pd.read_csv(
+            DATA_PATH
+        )
 
-    # Remove duplicate rows
-    df = (
-        df
-        .drop_duplicates()
-        .reset_index(drop=True)
-    )
+        # Clean column names
+        df.columns = (
+            df.columns
+            .astype(str)
+            .str.strip()
+        )
 
-    print(
-        f"[INFO] Dataset loaded successfully."
-    )
+        # Remove duplicate rows
+        df = (
+            df
+            .drop_duplicates()
+            .reset_index(drop=True)
+        )
 
-    print(
-        f"[INFO] Dataset shape: {df.shape}"
-    )
+        print(
+            "[INFO] Dataset loaded successfully."
+        )
 
-    return df
+        print(
+            f"[INFO] Dataset shape: {df.shape}"
+        )
+
+        return df
+
+    except Exception as e:
+
+        print(
+            f"[ERROR] Failed to load dataset: {e}"
+        )
+
+        raise
 
 
 # ============================================================
@@ -122,15 +171,23 @@ def load_dataset():
 def prepare_data(df):
     """Separate features and target."""
 
+    print(
+        "\n[INFO] Preparing data..."
+    )
+
     if TARGET not in df.columns:
+
         raise KeyError(
-            f"Target column '{TARGET}' not found."
+            f"Target column '{TARGET}' "
+            "not found."
         )
 
+    # Separate features
     X = df.drop(
         columns=[TARGET]
     )
 
+    # Separate target
     y = pd.to_numeric(
         df[TARGET],
         errors="coerce"
@@ -139,13 +196,23 @@ def prepare_data(df):
     # Remove rows with missing target
     valid_rows = y.notna()
 
-    X = X.loc[
-        valid_rows
-    ].reset_index(drop=True)
+    X = (
+        X.loc[valid_rows]
+        .reset_index(drop=True)
+    )
 
-    y = y.loc[
-        valid_rows
-    ].reset_index(drop=True)
+    y = (
+        y.loc[valid_rows]
+        .reset_index(drop=True)
+    )
+
+    print(
+        f"[INFO] Features shape: {X.shape}"
+    )
+
+    print(
+        f"[INFO] Target shape: {y.shape}"
+    )
 
     return X, y
 
@@ -167,32 +234,55 @@ def make_predictions(
         len(X)
     )
 
+    if number_of_samples == 0:
+
+        raise ValueError(
+            "No valid samples available "
+            "for prediction."
+        )
+
+    # Select samples
     X_sample = X.iloc[
         :number_of_samples
     ]
 
-    y_actual = y.iloc[
-        :number_of_samples
-    ].values
+    # Actual values
+    y_actual = (
+        y.iloc[
+            :number_of_samples
+        ].values
+    )
 
     print(
         f"\n[INFO] Predicting "
         f"{number_of_samples} samples..."
     )
 
+    # Make predictions
     predictions = model.predict(
         X_sample
     )
 
+    # Create result DataFrame
     prediction_df = pd.DataFrame({
-        "Actual Yield (Kg)": y_actual,
-        "Predicted Yield (Kg)": predictions,
-        "Difference (Kg)": np.abs(
-            y_actual - predictions
-        )
+
+        "Actual Yield (Kg)":
+            y_actual,
+
+        "Predicted Yield (Kg)":
+            predictions,
+
+        "Difference (Kg)":
+            np.abs(
+                y_actual -
+                predictions
+            )
     })
 
-    prediction_df = prediction_df.round(2)
+    # Round values
+    prediction_df = (
+        prediction_df.round(2)
+    )
 
     return prediction_df
 
@@ -201,12 +291,26 @@ def make_predictions(
 # 7. DISPLAY RESULT
 # ============================================================
 
-def display_results(prediction_df):
+def display_results(
+    prediction_df
+):
+    """Display prediction results."""
 
-    print("\n")
-    print("=" * 75)
-    print("             PADDY YIELD PREDICTION RESULTS")
-    print("=" * 75)
+    print(
+        "\n"
+    )
+
+    print(
+        "=" * 75
+    )
+
+    print(
+        "             PADDY YIELD PREDICTION RESULTS"
+    )
+
+    print(
+        "=" * 75
+    )
 
     print(
         prediction_df.to_string(
@@ -214,7 +318,9 @@ def display_results(prediction_df):
         )
     )
 
-    print("\n" + "=" * 75)
+    print(
+        "\n" + "=" * 75
+    )
 
 
 # ============================================================
@@ -223,40 +329,65 @@ def display_results(prediction_df):
 
 def main():
 
-    print("\n")
-    print("=" * 75)
-    print("              PADDY YIELD PREDICTOR")
-    print("                    PREDICTION")
-    print("=" * 75)
+    print(
+        "\n"
+    )
+
+    print(
+        "=" * 75
+    )
+
+    print(
+        "              PADDY YIELD PREDICTOR"
+    )
+
+    print(
+        "                    PREDICTION"
+    )
+
+    print(
+        "=" * 75
+    )
 
     try:
 
-        # Load model
+        # ----------------------------------------------------
+        # Load trained model
+        # ----------------------------------------------------
+
         model = load_model()
 
+        # ----------------------------------------------------
         # Load dataset
+        # ----------------------------------------------------
+
         df = load_dataset()
 
+        # ----------------------------------------------------
         # Prepare X and y
-        X, y = prepare_data(df)
+        # ----------------------------------------------------
 
-        print(
-            f"\n[INFO] Features shape: {X.shape}"
+        X, y = prepare_data(
+            df
         )
 
-        print(
-            f"[INFO] Target shape: {y.shape}"
-        )
-
+        # ----------------------------------------------------
         # Make predictions
-        prediction_df = make_predictions(
-            model,
-            X,
-            y,
-            number_of_samples=5
+        # ----------------------------------------------------
+
+        prediction_df = (
+            make_predictions(
+                model,
+                X,
+                y,
+                number_of_samples=5
+            )
         )
 
+        # ----------------------------------------------------
         # Display results
+        # ----------------------------------------------------
+
         display_results(
             prediction_df
         )
@@ -279,5 +410,5 @@ def main():
 # ============================================================
 
 if __name__ == "__main__":
-    main()
 
+    main()

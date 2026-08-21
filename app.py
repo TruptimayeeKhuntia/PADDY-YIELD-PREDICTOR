@@ -3,9 +3,14 @@ app.py
 ------
 Paddy Yield Predictor - Streamlit Application
 
-Run:
+Run from project root:
     streamlit run app.py
 """
+
+
+# ============================================================
+# IMPORTS
+# ============================================================
 
 from pathlib import Path
 
@@ -18,14 +23,45 @@ import streamlit as st
 # 1. PROJECT PATHS
 # ============================================================
 
-PROJECT_ROOT = Path(__file__).resolve().parent
+# app.py is in the PROJECT ROOT
+#
+# Project structure:
+#
+# PADDY YIELD PREDICTOR/
+# │
+# ├── app.py
+# ├── paddydataset.csv
+# │
+# ├── src/
+# │   ├── training.py
+# │   └── prediction.py
+# │
+# ├── models/
+# │   └── paddy_yield_predictor.joblib
+# │
+# └── report/
+#
+# Therefore, project root is simply the app.py folder.
 
-DATA_PATH = PROJECT_ROOT / "paddydataset.csv"
+PROJECT_ROOT = (
+    Path(__file__).resolve().parent
+)
+
+DATA_PATH = (
+    PROJECT_ROOT /
+    "paddydataset.csv"
+)
 
 MODEL_PATH = (
-    PROJECT_ROOT
-    / "models"
-    / "paddy_yield_predictor.joblib"
+    PROJECT_ROOT /
+    "models" /
+    "paddy_yield_predictor.joblib"
+)
+
+FEATURE_IMPORTANCE_PATH = (
+    PROJECT_ROOT /
+    "report" /
+    "feature_importance.csv"
 )
 
 TARGET = "Paddy yield(in Kg)"
@@ -116,6 +152,7 @@ FEATURE_HELP = {
 
 @st.cache_resource
 def load_model():
+    """Load trained Random Forest model."""
 
     if not MODEL_PATH.exists():
 
@@ -126,13 +163,19 @@ Model file was not found.
 Expected location:
 {MODEL_PATH}
 
-Please make sure this file exists:
+Please run:
 
-models/paddy_yield_predictor.joblib
+python src\\training.py
+
+first.
 """
         )
 
-    return joblib.load(MODEL_PATH)
+    model = joblib.load(
+        MODEL_PATH
+    )
+
+    return model
 
 
 # ============================================================
@@ -141,6 +184,7 @@ models/paddy_yield_predictor.joblib
 
 @st.cache_data
 def load_dataset():
+    """Load and clean Paddy dataset."""
 
     if not DATA_PATH.exists():
 
@@ -153,7 +197,9 @@ Expected location:
 """
         )
 
-    df = pd.read_csv(DATA_PATH)
+    df = pd.read_csv(
+        DATA_PATH
+    )
 
     # Clean column names
     df.columns = (
@@ -175,9 +221,11 @@ Expected location:
     )
 
     # Remove duplicate rows
-    df = df.drop_duplicates()
-
-    df = df.reset_index(drop=True)
+    df = (
+        df
+        .drop_duplicates()
+        .reset_index(drop=True)
+    )
 
     return df
 
@@ -189,13 +237,18 @@ Expected location:
 try:
 
     model = load_model()
+
     df = load_dataset()
 
 except Exception as error:
 
-    st.error("❌ Unable to load project files.")
+    st.error(
+        "❌ Unable to load project files."
+    )
 
-    st.exception(error)
+    st.exception(
+        error
+    )
 
     st.stop()
 
@@ -212,9 +265,6 @@ if TARGET not in df.columns:
 
 Expected:
 {TARGET}
-
-Available columns:
-{list(df.columns)}
 """
     )
 
@@ -225,18 +275,25 @@ Available columns:
 # 8. FEATURES
 # ============================================================
 
+# IMPORTANT:
+# These are the exact input columns used during training.
+
 X = df.drop(
     columns=[TARGET]
 )
 
 
 # ============================================================
-# 9. HERO SECTION - HTML ONLY
+# 9. HERO SECTION
 # ============================================================
 
-st.title("🌾 Paddy Yield Predictor")
+st.title(
+    "🌾 Paddy Yield Predictor"
+)
 
-st.subheader("AI-Powered Paddy Yield Prediction System")
+st.subheader(
+    "AI-Powered Paddy Yield Prediction System"
+)
 
 st.write(
     "Predict paddy yield using agricultural, "
@@ -244,7 +301,9 @@ st.write(
 )
 
 st.info(
-    "🤖 Machine Learning  |  🌱 Smart Agriculture  |  📊 Data Driven"
+    "🤖 Machine Learning  |  "
+    "🌱 Smart Agriculture  |  "
+    "📊 Data Driven"
 )
 
 st.divider()
@@ -256,15 +315,19 @@ st.divider()
 
 with st.sidebar:
 
-    st.header("🌾 Paddy Yield Predictor")
+    st.header(
+        "🌾 Paddy Yield Predictor"
+    )
 
     st.divider()
 
     # --------------------------------------------------------
-    # ABOUT
+    # ABOUT PROJECT
     # --------------------------------------------------------
 
-    st.subheader("📌 About Project")
+    st.subheader(
+        "📌 About Project"
+    )
 
     st.write(
         """
@@ -279,7 +342,9 @@ with st.sidebar:
     # OBJECTIVE
     # --------------------------------------------------------
 
-    st.subheader("🎯 Objective")
+    st.subheader(
+        "🎯 Objective"
+    )
 
     st.markdown(
         """
@@ -294,19 +359,29 @@ with st.sidebar:
     # MODEL
     # --------------------------------------------------------
 
-    st.subheader("🤖 Machine Learning Model")
+    st.subheader(
+        "🤖 Machine Learning Model"
+    )
 
-    st.write("**Algorithm:** Random Forest Regressor")
+    st.write(
+        "**Algorithm:** Random Forest Regressor"
+    )
 
-    st.write("**Learning Type:** Supervised Learning")
+    st.write(
+        "**Learning Type:** Supervised Learning"
+    )
 
-    st.write("**Problem Type:** Regression")
+    st.write(
+        "**Problem Type:** Regression"
+    )
 
     # --------------------------------------------------------
     # DATASET
     # --------------------------------------------------------
 
-    st.subheader("📊 Dataset Information")
+    st.subheader(
+        "📊 Dataset Information"
+    )
 
     st.write(
         """
@@ -316,7 +391,9 @@ with st.sidebar:
         """
     )
 
-    st.write("**Target Variable:**")
+    st.write(
+        "**Target Variable:**"
+    )
 
     st.code(
         TARGET,
@@ -327,52 +404,24 @@ with st.sidebar:
     # FEATURES
     # --------------------------------------------------------
 
-    st.subheader("🌱 Features Used")
-
-    st.markdown(
-        """
-        **Crop & Land**
-
-        - Hectares
-        - Agriblock
-        - Variety
-        - Soil Types
-
-        **Seed & Nursery**
-
-        - Seedrate(in Kg)
-        - Nursery
-        - Nursery area (Cents)
-        - LP_Mainfield(in Tonnes)
-        - LP_nurseryarea(in Tonnes)
-
-        **Fertilizer & Management**
-
-        - DAP_20days
-        - Weed28D_thiobencarb
-        - Urea_40Days
-        - Potassh_50Days
-        - Micronutrients_70Days
-        - Pest_60Day
-
-        **Environmental**
-
-        - Rain measures
-        - AI measures
-        - Min/Max temp ranges
-
-        **Wind**
-
-        - Inst Wind Speed_D1_D30(in Knots)
-        - Wind Direction_D1_D30
-        """
+    st.subheader(
+        "🌱 Features Used"
     )
+
+    # Show ONLY actual features from X
+    for feature in X.columns:
+
+        st.write(
+            f"• {feature}"
+        )
 
     # --------------------------------------------------------
     # DATASET STATISTICS
     # --------------------------------------------------------
 
-    st.subheader("📋 Dataset Statistics")
+    st.subheader(
+        "📋 Dataset Statistics"
+    )
 
     col1, col2 = st.columns(2)
 
@@ -391,10 +440,12 @@ with st.sidebar:
         )
 
     # --------------------------------------------------------
-    # TECHNOLOGY
+    # TECHNOLOGY STACK
     # --------------------------------------------------------
 
-    st.subheader("🛠 Technology Stack")
+    st.subheader(
+        "🛠 Technology Stack"
+    )
 
     st.markdown(
         """
@@ -427,7 +478,9 @@ with st.sidebar:
     # MODEL PERFORMANCE
     # --------------------------------------------------------
 
-    st.subheader("📈 Model Performance")
+    st.subheader(
+        "📈 Model Performance"
+    )
 
     st.write(
         """
@@ -445,15 +498,41 @@ with st.sidebar:
         """
     )
 
-    st.info(
-        "Performance values can be added after model evaluation."
-    )
+    # --------------------------------------------------------
+    # FEATURE IMPORTANCE
+    # --------------------------------------------------------
+
+    if FEATURE_IMPORTANCE_PATH.exists():
+
+        st.subheader(
+            "⭐ Feature Importance"
+        )
+
+        st.write(
+            """
+            Feature importance shows which processed
+            features contributed most to the Random
+            Forest prediction.
+            """
+        )
+
+        importance_df = pd.read_csv(
+            FEATURE_IMPORTANCE_PATH
+        )
+
+        st.dataframe(
+            importance_df.head(10),
+            use_container_width=True,
+            hide_index=True
+        )
 
     # --------------------------------------------------------
     # WORKFLOW
     # --------------------------------------------------------
 
-    st.subheader("🔄 ML Workflow")
+    st.subheader(
+        "🔄 ML Workflow"
+    )
 
     st.markdown(
         """
@@ -464,9 +543,11 @@ with st.sidebar:
         5. ⚙️ Data Preprocessing
         6. ✂️ Train-Test Split
         7. 🤖 Model Training
-        8. 📈 Model Evaluation
-        9. 💾 Model Saving
-        10. 🚀 Deployment
+        8. 🔧 Hyperparameter Tuning
+        9. 📈 Model Evaluation
+        10. ⭐ Feature Importance
+        11. 💾 Model Saving
+        12. 🚀 Deployment
         """
     )
 
@@ -474,7 +555,9 @@ with st.sidebar:
     # PROJECT TYPE
     # --------------------------------------------------------
 
-    st.subheader("🎓 Project Type")
+    st.subheader(
+        "🎓 Project Type"
+    )
 
     st.write(
         """
@@ -489,7 +572,9 @@ with st.sidebar:
 # 11. MAIN INPUT SECTION
 # ============================================================
 
-st.header("🌱 Enter Paddy Information")
+st.header(
+    "🌱 Enter Paddy Information"
+)
 
 st.write(
     """
@@ -507,21 +592,35 @@ st.divider()
 
 user_input = {}
 
-input_columns = st.columns(3)
+input_columns = st.columns(
+    3
+)
 
 
-for index, column in enumerate(X.columns):
+# IMPORTANT:
+# Only columns present in X are displayed.
+# Target column is NOT displayed as an input.
 
-    with input_columns[index % 3]:
+for index, column in enumerate(
+    X.columns
+):
 
-        st.subheader(f"🌱 {column}")
+    with input_columns[
+        index % 3
+    ]:
+
+        st.subheader(
+            f"🌱 {column}"
+        )
 
         description = FEATURE_HELP.get(
             column,
             "Enter the value for this agricultural feature."
         )
 
-        st.caption(description)
+        st.caption(
+            description
+        )
 
         # ----------------------------------------------------
         # NUMERICAL INPUT
@@ -537,10 +636,12 @@ for index, column in enumerate(X.columns):
 
                 median = 0.0
 
-            user_input[column] = st.number_input(
-                "Enter value",
-                value=float(median),
-                key=f"num_{index}"
+            user_input[column] = (
+                st.number_input(
+                    "Enter value",
+                    value=float(median),
+                    key=f"num_{index}"
+                )
             )
 
         # ----------------------------------------------------
@@ -557,21 +658,27 @@ for index, column in enumerate(X.columns):
                 .tolist()
             )
 
-            values = sorted(values)
+            values = sorted(
+                values
+            )
 
             if len(values) > 0:
 
-                user_input[column] = st.selectbox(
-                    "Select value",
-                    values,
-                    key=f"cat_{index}"
+                user_input[column] = (
+                    st.selectbox(
+                        "Select value",
+                        values,
+                        key=f"cat_{index}"
+                    )
                 )
 
             else:
 
-                user_input[column] = st.text_input(
-                    "Enter value",
-                    key=f"text_{index}"
+                user_input[column] = (
+                    st.text_input(
+                        "Enter value",
+                        key=f"text_{index}"
+                    )
                 )
 
 
@@ -597,7 +704,7 @@ if predict:
     try:
 
         # ----------------------------------------------------
-        # CREATE DATAFRAME
+        # CREATE INPUT DATAFRAME
         # ----------------------------------------------------
 
         input_df = pd.DataFrame(
@@ -620,10 +727,8 @@ if predict:
             input_df
         )
 
-        raw_prediction = prediction[0]
-
         predicted_yield = float(
-            raw_prediction
+            prediction[0]
         )
 
         # ----------------------------------------------------
@@ -649,13 +754,17 @@ if predict:
 
         st.divider()
 
-        st.header("🌾 Prediction Result")
+        st.header(
+            "🌾 Prediction Result"
+        )
 
         st.success(
             "✅ Prediction generated successfully!"
         )
 
-        col1, col2 = st.columns(2)
+        col1, col2 = st.columns(
+            2
+        )
 
         with col1:
 
@@ -694,7 +803,8 @@ if predict:
 
             st.dataframe(
                 input_df,
-                use_container_width=True
+                use_container_width=True,
+                hide_index=True
             )
 
     except Exception as error:
@@ -703,11 +813,13 @@ if predict:
             "❌ Prediction failed."
         )
 
-        st.exception(error)
+        st.exception(
+            error
+        )
 
 
 # ============================================================
-# 15. FOOTER - HTML ONLY
+# 15. FOOTER
 # ============================================================
 
 st.divider()
